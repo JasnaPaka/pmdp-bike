@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a3a5c"/>
+      <stop offset="100%" stop-color="#1e6b3c"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Decorative circles -->
+  <circle cx="980" cy="120" r="200" fill="rgba(255,255,255,0.04)"/>
+  <circle cx="1050" cy="500" r="140" fill="rgba(255,255,255,0.04)"/>
+  <circle cx="150" cy="520" r="160" fill="rgba(255,255,255,0.04)"/>
+
+  <!-- Bike emoji -->
+  <text x="100" y="310" font-size="200" font-family="system-ui">🚲</text>
+
+  <!-- Title -->
+  <text x="420" y="240" font-size="72" font-weight="800" fill="white" font-family="'Segoe UI', system-ui, sans-serif">PMDP Bike</text>
+
+  <!-- Subtitle -->
+  <text x="422" y="310" font-size="36" fill="rgba(255,255,255,0.80)" font-family="'Segoe UI', system-ui, sans-serif">Sdílená kola v Plzni</text>
+
+  <!-- Divider -->
+  <rect x="422" y="340" width="600" height="3" fill="rgba(255,255,255,0.2)" rx="2"/>
+
+  <!-- Description -->
+  <text x="422" y="395" font-size="28" fill="rgba(255,255,255,0.65)" font-family="'Segoe UI', system-ui, sans-serif">Živý přehled stanic · dostupná kola</text>
+  <text x="422" y="435" font-size="28" fill="rgba(255,255,255,0.65)" font-family="'Segoe UI', system-ui, sans-serif">· volná místa · interaktivní mapa</text>
+
+  <!-- Badge -->
+  <rect x="422" y="490" width="290" height="52" rx="26" fill="rgba(255,255,255,0.15)"/>
+  <text x="567" y="523" font-size="22" fill="white" font-family="'Segoe UI', system-ui, sans-serif" text-anchor="middle">Neoficiální přehled</text>
+</svg>

@@ -70,22 +70,6 @@
       gap: 12px;
     }
     .logo-group { display: flex; align-items: center; gap: 14px; }
-    .github-link {
-      display: flex; align-items: center; gap: 7px;
-      color: rgba(255,255,255,.75);
-      text-decoration: none;
-      font-size: .82rem;
-      border: 1px solid rgba(255,255,255,.25);
-      border-radius: 20px;
-      padding: 6px 14px;
-      transition: color .15s, border-color .15s, background .15s;
-      white-space: nowrap;
-    }
-    .github-link:hover {
-      color: #fff;
-      border-color: rgba(255,255,255,.6);
-      background: rgba(255,255,255,.08);
-    }
     .logo-icon {
       width: 48px; height: 48px;
       background: rgba(255,255,255,.95);
@@ -493,12 +477,6 @@
         <span>Sdílená kola v Plzni – živý přehled</span>
       </h1>
     </div>
-    <a href="https://github.com/JasnaPaka/pmdp-bike" target="_blank" rel="noopener" class="github-link">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8"/>
-      </svg>
-      Zdrojový kód
-    </a>
   </div>
 </header>
 
@@ -589,7 +567,8 @@
   Data: <a href="https://www.pmdp.cz/bike/" target="_blank">PMDP Bike</a> ·
   GBFS v3.0 API
   <br style="margin-bottom:6px" />
-  Vytvořil <a href="https://www.jasnapaka.com/" target="_blank">Pavel Cvrček</a> s využitím AI, Claude Sonnet 4.6.
+  Vytvořil <a href="https://www.jasnapaka.com/" target="_blank">Pavel Cvrček</a> s využitím AI, Claude Sonnet 4.6. ·
+  <a href="https://github.com/JasnaPaka/pmdp-bike" target="_blank" rel="noopener">Zdrojový kód na GitHubu</a>
 </footer>
 
 <script>
@@ -736,6 +715,10 @@ const occupancyPct   = totalCapacity ? Math.round(totalAvailable / totalCapacity
             <input type="checkbox" id="map-only-available" style="width:15px;height:15px;cursor:pointer;accent-color:var(--green-dark)" />
             Jen stanice s koly
           </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:.82rem;color:var(--gray-600);cursor:pointer;user-select:none">
+            <input type="checkbox" id="map-only-returnable" style="width:15px;height:15px;cursor:pointer;accent-color:var(--blue-dark)" />
+            Jen stanice s volným místem
+          </label>
         </div>
       </div>
       <div id="station-map"></div>
@@ -818,11 +801,15 @@ function initMap(stations) {
   );
   if (allMapStations.length) leafletMap.fitBounds(allGroup.getBounds().pad(0.05));
 
-  renderMapMarkers(false);
+  renderMapMarkers(false, false);
 
-  document.getElementById('map-only-available').addEventListener('change', e => {
-    renderMapMarkers(e.target.checked);
-  });
+  const refreshMarkers = () => {
+    const onlyAvailable  = document.getElementById('map-only-available').checked;
+    const onlyReturnable = document.getElementById('map-only-returnable').checked;
+    renderMapMarkers(onlyAvailable, onlyReturnable);
+  };
+  document.getElementById('map-only-available').addEventListener('change', refreshMarkers);
+  document.getElementById('map-only-returnable').addEventListener('change', refreshMarkers);
 }
 
 let userLocationMarker = null;
@@ -869,13 +856,15 @@ function locateUser() {
   );
 }
 
-function renderMapMarkers(onlyAvailable) {
+function renderMapMarkers(onlyAvailable, onlyReturnable) {
   if (markerLayer) {
     leafletMap.removeLayer(markerLayer);
     markerLayer = null;
   }
 
-  const list = onlyAvailable ? allMapStations.filter(s => s.available > 0) : allMapStations;
+  let list = allMapStations;
+  if (onlyAvailable)  list = list.filter(s => s.available > 0);
+  if (onlyReturnable) list = list.filter(s => s.docks > 0);
 
   const markers = list.map(s => {
     const color = s.available >= 3 ? '#27ae60' : s.available >= 1 ? '#e67e22' : '#e74c3c';

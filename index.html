@@ -122,6 +122,71 @@
       font-size: .8rem; color: var(--gray-600);
     }
 
+    /* ── INFO ICON + TOOLTIP ── */
+    .info-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 15px; height: 15px;
+      border-radius: 50%;
+      background: var(--gray-400);
+      color: white;
+      font-size: .6rem;
+      font-weight: 700;
+      font-style: normal;
+      cursor: default;
+      position: relative;
+      vertical-align: middle;
+      margin-left: 4px;
+      flex-shrink: 0;
+    }
+    .info-icon .tooltip-box {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--gray-800);
+      color: #fff;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: .78rem;
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      white-space: nowrap;
+      z-index: 200;
+      box-shadow: 0 4px 16px rgba(0,0,0,.25);
+      pointer-events: none;
+      line-height: 1.6;
+    }
+    .info-icon .tooltip-box::before {
+      content: '';
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-bottom-color: var(--gray-800);
+    }
+    @media (hover: hover) {
+      .info-icon:hover .tooltip-box { display: block; }
+    }
+
+    /* mobilní info o okrajových stanicích */
+    .peripheral-note {
+      display: none;
+      max-width: 1100px;
+      margin: 0 auto 24px;
+      padding: 0 16px;
+      font-size: .8rem;
+      color: var(--gray-600);
+      line-height: 1.6;
+    }
+    @media (hover: none) {
+      .peripheral-note { display: block; }
+    }
+
     /* ── GAUGE BAR ── */
     .gauge-wrap { margin-top: 4px; }
     .gauge-track {
@@ -634,7 +699,10 @@ function render({ stations, lastUpdated, totalVehicles, offStationDisabled }) {
   const totalDocks      = stations.reduce((s, x) => s + x.docks, 0);
   const totalUnavailable = Math.max(0, totalCapacity - totalAvailable - totalDocks);
 const occupancyPct   = totalCapacity ? Math.round(totalAvailable / totalCapacity * 100) : 0;
-  const activeStations = stations.filter(s => s.is_installed && s.is_renting).length;
+  const PERIPHERAL_IDS = new Set(['37','33','14','28','60','26','61','9','34','30']);
+  const peripheralAvailable = stations
+    .filter(s => PERIPHERAL_IDS.has(String(s.id)))
+    .reduce((sum, s) => sum + s.available, 0);
 
   // Update timestamp
 // ── Top / bottom 5 ──
@@ -656,6 +724,19 @@ const occupancyPct   = totalCapacity ? Math.round(totalAvailable / totalCapacity
         <div class="card-sub">${occupancyPct} % obsazenost míst</div>
       </div>
 
+      <div class="card blue">
+        <div class="card-label" style="display:flex;align-items:center">
+          Kola na okraji
+          <i class="info-icon">i<div class="tooltip-box">Zahrnuté stanice:<br>Malesice · Radčice · Křimice · Náves Lhota<br>Valcha · Náves Litice · Radobyčice<br>Koterov · Červený Hrádek · Bukovec</div></i>
+        </div>
+        <div class="card-value">${peripheralAvailable}</div>
+        <div class="card-sub">kola v okrajových částech města</div>
+        <div class="gauge-wrap">
+          <div class="gauge-track"><div class="gauge-fill" style="width:${totalAvailable ? Math.round(peripheralAvailable/totalAvailable*100) : 0}%"></div></div>
+        </div>
+        <div class="card-sub">${totalAvailable ? Math.round(peripheralAvailable/totalAvailable*100) : 0} % z dostupných kol</div>
+      </div>
+
       <div class="card orange">
         <div class="card-label">Nedostupná kola</div>
         <div class="card-value">${totalUnavailable}</div>
@@ -670,15 +751,10 @@ const occupancyPct   = totalCapacity ? Math.round(totalAvailable / totalCapacity
         <div class="card-value">${offStationDisabled}</div>
         <div class="card-sub">zakázaná v systému, mimo provoz</div>
       </div>
+    </div>
 
-      <div class="card blue">
-        <div class="card-label">Aktivní stanice</div>
-        <div class="card-value">${activeStations}</div>
-        <div class="card-sub">z celkem ${stations.length} stanic</div>
-        <div class="gauge-wrap">
-          <div class="gauge-track"><div class="gauge-fill" style="width:${stations.length ? Math.round(activeStations/stations.length*100) : 0}%"></div></div>
-        </div>
-      </div>
+    <div class="peripheral-note">
+      <strong>Kola na okraji</strong> — zahrnuté stanice: Malesice, Radčice, Křimice, Náves Lhota, Valcha, Náves Litice, Radobyčice, Koterov, Červený Hrádek, Bukovec.
     </div>
 
     <!-- TOP / BOTTOM STATIONS -->

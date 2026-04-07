@@ -632,7 +632,7 @@ function render({ stations, lastUpdated, totalVehicles, offStationDisabled }) {
   const totalCapacity   = stations.reduce((s, x) => s + x.capacity, 0);
   const totalAvailable  = stations.reduce((s, x) => s + x.available, 0);
   const totalDocks      = stations.reduce((s, x) => s + x.docks, 0);
-  const totalUnavailable = totalCapacity - totalAvailable - totalDocks;
+  const totalUnavailable = Math.max(0, totalCapacity - totalAvailable - totalDocks);
 const occupancyPct   = totalCapacity ? Math.round(totalAvailable / totalCapacity * 100) : 0;
   const activeStations = stations.filter(s => s.is_installed && s.is_renting).length;
 

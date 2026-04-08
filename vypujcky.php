@@ -74,9 +74,8 @@
   <div class="header-inner">
     <div class="logo-group">
       <div class="logo-icon">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1a3a5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/>
-          <path d="M15 6a1 1 0 0 0 0-2h-1l-5 8h4l1.5 3"/><path d="m12 6 5 8"/>
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="#1a3a5c" viewBox="0 0 16 16">
+          <path d="M4 4.5a.5.5 0 0 1 .5-.5H6a.5.5 0 0 1 0 1v.5h4.14l.386-1.158A.5.5 0 0 1 11 4h1a.5.5 0 0 1 0 1h-.64l-.311.935.807 1.29a3 3 0 1 1-.848.53l-.508-.812-2.076 3.322A.5.5 0 0 1 8 10.5H5.959a3 3 0 1 1-1.815-3.274L5 5.856V5h-.5a.5.5 0 0 1-.5-.5m1.5 2.443-.508.814c.5.444.85 1.054.967 1.743h1.139zM8 9.057 9.598 6.5H6.402zM4.937 9.5a2 2 0 0 0-.487-.877l-.548.877zM3.603 8.092A2 2 0 1 0 4.937 10.5H3a.5.5 0 0 1-.424-.765zm7.947.53a2 2 0 1 0 .848-.53l1.026 1.643a.5.5 0 1 1-.848.53z"/>
         </svg>
       </div>
       <h1>PMDP Bike – Výpůjčky<span>Odhadované výpůjčky bikesharingu v Plzni</span></h1>
@@ -84,6 +83,10 @@
     <nav class="header-nav"><a href="index.html">← Zpět na přehled</a></nav>
   </div>
 </header>
+
+<div style="background:#fff3cd;border-bottom:1px solid #ffc107;padding:8px 24px;font-size:.82rem;color:#856404;text-align:center;">
+  ⚠️ Tato stránka není oficiálním přehledem PMDP. Jde o neoficiální vizualizaci veřejně dostupných dat ze systému <a href="https://www.pmdp.cz/bike/" target="_blank" style="color:#856404;font-weight:600">PMDP Bike</a>.
+</div>
 
 <main>
 
@@ -146,7 +149,7 @@ async function loadOverview() {
   el.innerHTML = '<div class="loading">Načítám…</div>';
   try {
     const d = await get('overview');
-    const avgStr = d.avg_per_day != null ? d.avg_per_day.toFixed(1) : '–';
+    const avgStr = d.avg_per_day != null ? Math.round(d.avg_per_day) : '–';
     el.innerHTML = `
       <div class="card green">
         <div class="card-label">Celkem výpůjček</div>

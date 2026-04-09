@@ -62,6 +62,7 @@
     .bar-num { font-weight: 700; color: var(--blue-dark); }
 
     .note { font-size: .78rem; color: var(--gray-600); margin-top: 14px; line-height: 1.5; }
+    @media (max-width: 600px) { .hide-sm { display: none; } }
     .loading { text-align: center; padding: 40px; color: var(--gray-600); font-size: .9rem; }
 
     footer { text-align: center; padding: 24px 16px; font-size: .78rem; color: var(--gray-600); }
@@ -92,15 +93,16 @@
 
   <div class="period-bar">
     <span>Zobrazit za:</span>
-    <button class="period-btn" onclick="setPeriod(1,this)">Dnes</button>
-    <button class="period-btn active" onclick="setPeriod(7,this)">7 dní</button>
+    <button class="period-btn active" onclick="setPeriod(1,this)">Dnes</button>
+    <button class="period-btn" onclick="setYesterday(this)">Včera</button>
+    <button class="period-btn" onclick="setPeriod(7,this)">7 dní</button>
     <button class="period-btn" onclick="setPeriod(30,this)">30 dní</button>
     <button class="period-btn" onclick="setPeriod(90,this)">90 dní</button>
   </div>
 
   <div class="cards" id="cards"><div class="loading">Načítám…</div></div>
 
-  <div class="panel">
+  <div class="panel" id="daily-panel">
     <div class="section-title">📅 Výpůjčky po dnech</div>
     <div class="chart-wrap"><canvas id="daily-chart"></canvas></div>
   </div>
@@ -113,35 +115,56 @@
   <div class="panel">
     <div class="section-title">📍 Výpůjčky dle stanice</div>
     <div id="stations-wrap"><div class="loading">Načítám…</div></div>
-    <p class="note">Výpůjčka je detekována, když konkrétní kolo (dle jeho ID) zmizí ze stanice mezi dvěma měřeními.</p>
+
+  </div>
+
+  <div class="panel">
+    <div class="section-title">🏙️ Výpůjčky dle městského obvodu</div>
+    <div id="districts-wrap"><div class="loading">Načítám…</div></div>
   </div>
 
 </main>
 
 <footer>
+  <span style="color:var(--gray-800);font-weight:600">Počty výpůjček jsou orientační – vzhledem k povaze měření se mohou od oficiálních údajů lišit.</span>
+  <br style="margin-bottom:6px">
   Data: <a href="https://www.pmdp.cz/bike/" target="_blank">PMDP Bike</a> · GBFS v3.0 API ·
   Vytvořil <a href="https://www.jasnapaka.com/" target="_blank">Pavel Cvrček</a>
 </footer>
 
 <script>
 const API = 'api_vypujcky.php';
-let currentDays = 7;
+let currentDays = 1;
+let currentDate = null;  // YYYY-MM-DD, pouze pro "Včera"
 let dailyChart = null, hourlyChart = null;
 
 window.addEventListener('DOMContentLoaded', loadAll);
 
 function setPeriod(days, btn) {
   currentDays = days;
+  currentDate = null;
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadAll();
+}
+
+function setYesterday(btn) {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  currentDate = d.toISOString().slice(0, 10);
+  currentDays = 1;
   document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   loadAll();
 }
 
 function loadAll() {
+  document.getElementById('daily-panel').style.display = (currentDays === 1) ? 'none' : '';
   loadOverview();
   loadDaily();
   loadHourly();
   loadStations();
+  loadDistricts();
 }
 
 async function loadOverview() {
@@ -194,29 +217,90 @@ async function loadHourly() {
   } catch {}
 }
 
+const STATIONS_PREVIEW = 20;
+let stationsExpanded = false;
+let stationsData = [];
+
 async function loadStations() {
   const el = document.getElementById('stations-wrap');
   el.innerHTML = '<div class="loading">Načítám…</div>';
+  stationsExpanded = false;
   try {
-    const rows = await get('stations');
+    stationsData = await get('stations');
+    renderStations();
+  } catch { el.innerHTML = '<div class="loading">Chyba při načítání.</div>'; }
+}
+
+function renderStations() {
+  const el = document.getElementById('stations-wrap');
+  const rows = stationsData;
+  if (!rows.length) { el.innerHTML = '<div class="loading">Zatím žádná data.</div>'; return; }
+  const max     = rows[0].trips;
+  const clipped = !stationsExpanded && rows.length > STATIONS_PREVIEW;
+  const visible = clipped ? rows.slice(0, STATIONS_PREVIEW) : rows;
+  const expandBtn = clipped ? `
+    <div style="padding:14px 20px;text-align:center;border-top:1px solid var(--gray-200)">
+      <button onclick="expandStations()" style="padding:8px 24px;border:1px solid var(--gray-400);border-radius:20px;background:white;font-size:.85rem;cursor:pointer;transition:all .15s"
+        onmouseover="this.style.background='var(--blue)';this.style.color='white';this.style.borderColor='var(--blue)'"
+        onmouseout="this.style.background='white';this.style.color='';this.style.borderColor='var(--gray-400)'">
+        Zobrazit všechny stanice (${rows.length - STATIONS_PREVIEW} dalších)
+      </button>
+    </div>` : '';
+  el.innerHTML = `<table class="station-table">
+    <thead><tr><th>#</th><th>Stanice</th><th class="hide-sm">Obvod</th><th>Výpůjček</th></tr></thead>
+    <tbody>${visible.map((r, i) => `<tr>
+      <td style="color:var(--gray-600);font-size:.8rem">${i + 1}.</td>
+      <td>${esc(r.name)}</td>
+      <td class="hide-sm" style="color:var(--gray-600);font-size:.85rem">${r.district ? esc(r.district) : '–'}</td>
+      <td><div class="bar-wrap">
+        <div class="bar" style="width:${Math.max(Math.round(r.trips / max * 120), 4)}px"></div>
+        <span class="bar-num">${r.trips}</span>
+      </div></td>
+    </tr>`).join('')}</tbody>
+  </table>${expandBtn}`;
+}
+
+function expandStations() {
+  stationsExpanded = true;
+  renderStations();
+}
+
+async function loadDistricts() {
+  const el = document.getElementById('districts-wrap');
+  el.innerHTML = '<div class="loading">Načítám…</div>';
+  try {
+    const rows = await get('districts');
     if (!rows.length) { el.innerHTML = '<div class="loading">Zatím žádná data.</div>'; return; }
-    const max = rows[0].trips;
+
+    // Agregace po obvodu
+    const byDistrict = {};
+    for (const r of rows) {
+      if (!byDistrict[r.district]) byDistrict[r.district] = { trips: 0, parts: [] };
+      byDistrict[r.district].trips += r.trips;
+      if (r.district_part) byDistrict[r.district].parts.push({ name: r.district_part, trips: r.trips });
+    }
+    const districts = Object.entries(byDistrict).sort((a, b) => b[1].trips - a[1].trips);
+    const max = districts[0][1].trips;
+
     el.innerHTML = `<table class="station-table">
-      <thead><tr><th>#</th><th>Stanice</th><th>Výpůjček</th></tr></thead>
-      <tbody>${rows.map((r, i) => `<tr>
-        <td style="color:var(--gray-600);font-size:.8rem">${i + 1}.</td>
-        <td>${esc(r.name)}</td>
-        <td><div class="bar-wrap">
-          <div class="bar" style="width:${Math.max(Math.round(r.trips / max * 120), 4)}px"></div>
-          <span class="bar-num">${r.trips}</span>
-        </div></td>
-      </tr>`).join('')}</tbody>
+      <thead><tr><th>#</th><th>Obvod</th><th>Výpůjček</th></tr></thead>
+      <tbody>${districts.map(([name, d], i) => `<tr>
+          <td style="color:var(--gray-600);font-size:.8rem">${i + 1}.</td>
+          <td>${esc(name)}</td>
+          <td><div class="bar-wrap">
+            <div class="bar" style="width:${Math.max(Math.round(d.trips / max * 120), 4)}px"></div>
+            <span class="bar-num">${d.trips}</span>
+          </div></td>
+        </tr>`).join('')}</tbody>
     </table>`;
   } catch { el.innerHTML = '<div class="loading">Chyba při načítání.</div>'; }
 }
 
 async function get(action) {
-  const r = await fetch(`${API}?action=${action}&days=${currentDays}`);
+  const params = currentDate
+    ? `action=${action}&date=${currentDate}`
+    : `action=${action}&days=${currentDays}`;
+  const r = await fetch(`${API}?${params}`);
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   const j = await r.json();
   if (j.error) throw new Error(j.error);

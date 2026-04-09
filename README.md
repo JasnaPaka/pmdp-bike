@@ -35,7 +35,13 @@ data do MySQL databáze. Výpůjčky jsou zobrazeny na stránce `vypujcky.php`.
    mysql -u <user> -p <databáze> < create.sql
    ```
 
-3. Nastavte cron pro pravidelný sběr dat (doporučeno každých 5 minut):
+3. Doplňte ke stanicím městský obvod a část obce (jednorázově, opakujte pro nové stanice):
+
+   ```bash
+   php enrich_stations.php
+   ```
+
+4. Nastavte cron pro pravidelný sběr dat (doporučeno každých 5 minut):
 
    ```
    */5 * * * * php /cesta/k/collector_vypujcky.php >> /var/log/pmdp_bike_vypujcky.log 2>&1
